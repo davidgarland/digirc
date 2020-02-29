@@ -59,7 +59,7 @@ CE txtbuf_set(TxtBuf *tb, size_t a, char v) {
     tb->raw[a + 1] = '\0';
     tb->len = a + 1;
   } else if (v == '\0') {
-    return CE_ZERO_ARG;
+    tb->len = a;
   }
   
   tb->raw[a] = v;
