@@ -10,4 +10,4 @@ build:
 	$(CC) $(CFLAGS) *.o $(LDFLAGS)
 
 clean:
-	-@rm -f backend *.a *.o *.so *.out
+	-@rm -f backend src/backend.ibc *.a *.o *.so *.out
