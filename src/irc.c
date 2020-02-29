@@ -88,11 +88,11 @@ enum server irc_info(TxtBuf *buf, TxtBuf *nick, TxtBuf *msg) {
     uint16_t i, j, k;
     for (i = 0; (i < msg->len) && (msg->raw[i] != ':'); i++);
     for (j = 0; j < (i - 3); j++)
-      nick->raw[j] = msg->raw[j + 3];
-    nick->raw[j] = '\0';
+      txtbuf_set(nick, j, msg->raw[j + 3]);
+    txtbuf_set(nick, j, '\0');
     for (j = i + 2, k = 0; j < msg->len; j++, k++)
-      msg->raw[k] = msg->raw[j];
-    msg->raw[k] = '\0';
+      txtbuf_set(msg, k, msg->raw[j]);
+    txtbuf_set(msg, k, '\0');
   }
 
   return sv;
