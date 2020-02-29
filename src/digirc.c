@@ -22,6 +22,21 @@ void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
   pclose(fp);
 }
 
+void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
+  txtbuf_fmt(cmd, "stack exec -- mueval -t 10 %s -e %s", type ? "--inferred-type -T" : "", args->raw);
+  FILE *fp = popen(cmd->raw, "r");
+  int i = 0;
+  while (fgets(res->raw, 512, fp) != NULL) {
+    if ((i == 0) && res->raw[0] == '<')
+      break;
+    if ((i == 1) && type)
+      break;
+    i++;
+  }
+  res->len = strlen(res->raw);
+  pclose(fp);
+}
+
 void irc_loop(int conn, bool first, TxtBuf *buf) {
   TxtBuf nick = {0};
   TxtBuf msg = {0};
@@ -53,10 +68,20 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
       if (msg.len && msg.raw[0] == '%') {
         if (!strncmp(msg.raw, "\%reload", 7) && !strncmp(nick.raw, "Digi", 4)) {
           system("idris --O2 src/backend.idr -o backend");
-        } else if (!strncmp(msg.raw, "\%eval", 5)) {
-
-        } else if (!strncmp(msg.raw, "\%type", 5)) {
-
+        } else if (!strncmp(msg.raw, "\%eval", 5) && msg.len > 6) {
+          txtbuf_cpy_cstr(&args, msg.raw + 6);
+          shell_esc(&args_esc, &args);
+          mueval(&res, false, &cmd, &args_esc);
+          txtbuf_fmt(&out, "%s => %s", nick.raw, res.raw);
+          if (res.raw[0] != '<')
+            irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
+        } else if (!strncmp(msg.raw, "\%type", 5) && msg.len > 6) {
+          txtbuf_cpy_cstr(&args, msg.raw + 6);
+          shell_esc(&args_esc, &args);
+          mueval(&res, true, &cmd, &args_esc);
+          txtbuf_fmt(&out, "%s => %s", nick.raw, res.raw);
+          if (res.raw[0] != '<')
+            irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
         } else {
           txtbuf_fmt(&args, "%s | %s: %s", sv_name[sv], nick.raw, msg.raw);
           shell_esc(&args_esc, &args);
