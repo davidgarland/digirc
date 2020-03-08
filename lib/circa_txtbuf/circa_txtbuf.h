@@ -78,16 +78,14 @@ CE txtbuf_set(TxtBuf *tb, size_t a, char v) {
   CE_CHECK(!tb->data, CE_NULL_ARG);
   CE_CHECK(a > tb->len, CE_OOB);
 
-  if (a == tb->len) {
-    if (v == '\0')
-      return CE_OK;
+  if (v == '\0') {
+    tb->len = a;
+  } else if (a == tb->len) {
     CE req_fail = txtbuf_require(tb, a + 2);
     if (req_fail)
       return req_fail;
     tb->data[a + 1] = '\0';
     tb->len = a + 1;
-  } else if (v == '\0') {
-    tb->len = a;
   }
   
   tb->data[a] = v;
@@ -156,8 +154,10 @@ CE txtbuf_realloc(TxtBuf *tb, size_t cap) {
   if (cap > tb->cap)
     memset(tb->data + tb->cap, 0, cap - tb->cap);
   tb->cap = cap;
-  if (cap < tb->len)
+  if (cap < tb->len) {
     tb->len = cap - 1;
+    tb->data[tb->len] = '\0';
+  }
   return CE_OK;
 }
 
@@ -275,14 +275,12 @@ CE txtbuf_fmt_va(TxtBuf *tb, const char *fmt, va_list ap) {
   CE_CHECK(!fmt, CE_NULL_ARG);
   va_list ap2;
   va_copy(ap2, ap);
-  size_t len = vsnprintf(NULL, 0, fmt, ap2);
+  size_t len = vsnprintf(NULL, 0, fmt, ap2) + 1;
   va_end(ap2);
   CE req_fail = txtbuf_require(tb, len + 1);
   if (req_fail)
     return req_fail;
   size_t written = vsnprintf(tb->data, len, fmt, ap);
-  if (written != len)
-    return CE_FMT;
   tb->data[len] = '\0';
   tb->len = len;
   return CE_OK;

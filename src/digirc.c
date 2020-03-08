@@ -14,27 +14,27 @@
 #include "digirc.h"
 
 void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
-  FILE *fp = popen(cmd->raw, "r");
-  printf("[CMDS]: %s\n", cmd->raw);
-  while (fgets(res->raw, 512, fp) != NULL);
-  res->len = strlen(res->raw);
-  printf("[RSLT]: %s", res->raw);
+  FILE *fp = popen(cmd->data, "r");
+  printf("[CMDS]: %s\n", cmd->data);
+  while (fgets(res->data, 512, fp) != NULL);
+  res->len = strlen(res->data);
+  printf("[RSLT]: %s", res->data);
   pclose(fp);
 }
 
 void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
-  txtbuf_fmt(cmd, "stack exec -- mueval -t 10 %s -e %s", type ? "--inferred-type -T" : "", args->raw);
-  FILE *fp = popen(cmd->raw, "r");
+  txtbuf_fmt(cmd, "stack exec -- mueval -t 10 %s -e %s", type ? "--inferred-type -T" : "", args->data);
+  FILE *fp = popen(cmd->data, "r");
   int i = 0;
-  while (fgets(res->raw, 512, fp) != NULL) {
-    printf("%s", res->raw);
-    //if ((i == 0) && res->raw[0] == '<')
+  while (fgets(res->data, 512, fp) != NULL) {
+    printf("%s", res->data);
+    //if ((i == 0) && res->data[0] == '<')
     //  break;
     //if ((i == 1) && type)
     //  break;
     //i++;
   }
-  res->len = strlen(res->raw);
+  res->len = strlen(res->data);
   pclose(fp);
 }
 
@@ -58,44 +58,45 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
 
   while (true) {
     irc_line(conn, buf);
-    if (!strncmp(buf->raw, "PING", 4)) {
-      buf->raw[1] = 'O';
-      irc_send(conn, buf->raw);
+    if (!strncmp(buf->data, "PING", 4)) {
+      buf->data[1] = 'O';
+      irc_send(conn, buf->data);
       if (first)
         break;
     } else if (!first) {
       sv = irc_info(buf, &nick, &msg);
-      printf("[RECV] %s | %s: %s\n", sv_name[sv], nick.raw, msg.raw);
-      if (msg.len && msg.raw[0] == '%') {
-        if (!strncmp(msg.raw, "\%reload", 7) && !strncmp(nick.raw, "Digi", 4)) {
+      printf("[RECV] %s | %s: %s\n", sv_name[sv], nick.data, msg.data);
+      if (msg.len && msg.data[0] == '%') {
+        if (!strncmp(msg.data, "\%reload", 7) && !strncmp(nick.data, "Digi", 4)) {
           system("idris --O2 src/backend.idr -o backend");
-        } else if (!strncmp(msg.raw, "\%eval", 5) && msg.len > 6) {
-          txtbuf_cpy_cstr(&args, msg.raw + 6);
+        } else if (!strncmp(msg.data, "\%eval", 5) && msg.len > 6) {
+          txtbuf_cpy_cstr(&args, msg.data + 6);
           shell_esc(&args_esc, &args);
           mueval(&res, false, &cmd, &args_esc);
-          txtbuf_fmt(&out, "%s => %s", nick.raw, res.raw);
-          //if (res.raw[0] != '<')
-          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
-        } else if (!strncmp(msg.raw, "\%type", 5) && msg.len > 6) {
-          txtbuf_cpy_cstr(&args, msg.raw + 6);
+          txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
+          //if (res.data[0] != '<')
+          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
+        } else if (!strncmp(msg.data, "\%type", 5) && msg.len > 6) {
+          txtbuf_cpy_cstr(&args, msg.data + 6);
           shell_esc(&args_esc, &args);
           mueval(&res, true, &cmd, &args_esc);
-          txtbuf_fmt(&out, "%s => %s", nick.raw, res.raw);
-          //if (res.raw[0] != '<')
-          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
+          txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
+          //if (res.data[0] != '<')
+          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
         } else {
-          txtbuf_fmt(&args, "%s | %s: %s", sv_name[sv], nick.raw, msg.raw);
+          txtbuf_fmt(&args, "%s | %s: %s", sv_name[sv], nick.data, msg.data);
+          printf("args: %s\n", args.data);
           shell_esc(&args_esc, &args);
-          txtbuf_fmt(&cmd, "./backend %s", args_esc.raw);
+          txtbuf_fmt(&cmd, "./backend %s", args_esc.data);
           irc_cmd(&res, &cmd);
-          if (!strncmp(res.raw, "OK", 2))
+          if (!strncmp(res.data, "OK", 2))
             continue;
-          txtbuf_fmt(&out, "%s %s", nick.raw, res.raw);
-          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
+          txtbuf_fmt(&out, "%s %s", nick.data, res.data);
+          irc_send(conn, "PRIVMSG #orebotspam :%s\r\n", out.data);
         }
       }
     } else {
-      printf("[INIT] %s", buf->raw);
+      printf("[INIT] %s", buf->data);
     }
   }
 }
@@ -123,9 +124,9 @@ int main() {
   // Join the room.
   while (true) {
     irc_line(conn, &buf);
-    printf("[JOIN] %s", buf.raw);
-    if (!strncmp(buf.raw, ":digirc", 7)) {
-      irc_send(conn, "JOIN #openredstone\r\n");
+    printf("[JOIN] %s", buf.data);
+    if (!strncmp(buf.data, ":digirc", 7)) {
+      irc_send(conn, "JOIN #orebotspam\r\n");
       break;
     }
   }

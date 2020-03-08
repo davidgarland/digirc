@@ -53,45 +53,45 @@ void irc_line(int conn, TxtBuf *buf) {
   }
 }
 
-void irc_nick_raw(TxtBuf *buf, TxtBuf *nick) {
+void irc_nick_data(TxtBuf *buf, TxtBuf *nick) {
   txtbuf_clear(nick);
 
-  for (size_t i = 1, j = 0; (i < (buf->len - 2)) && (buf->raw[i] != '!'); i++, j++)
-    txtbuf_push(nick, buf->raw[i]);
+  for (size_t i = 1, j = 0; (i < (buf->len - 2)) && (buf->data[i] != '!'); i++, j++)
+    txtbuf_push(nick, buf->data[i]);
 }
 
-void irc_msg_raw(TxtBuf *buf, TxtBuf *msg) {
+void irc_msg_data(TxtBuf *buf, TxtBuf *msg) {
   txtbuf_clear(msg);
 
   size_t i, j;
   
   for (i = 0, j = 0; (i < (buf->len - 2)) && (j < 3); i++)
-    if (buf->raw[i] == ' ')
+    if (buf->data[i] == ' ')
       j++;
   i++;
   
   for (j = 0; i < (buf->len - 2); i++, j++)
-    txtbuf_push(msg, buf->raw[i]);
+    txtbuf_push(msg, buf->data[i]);
 }
 
 enum server irc_info(TxtBuf *buf, TxtBuf *nick, TxtBuf *msg) {
-  irc_nick_raw(buf, nick);
-  irc_msg_raw(buf, msg);
+  irc_nick_data(buf, nick);
+  irc_msg_data(buf, msg);
 
   enum server sv = SV_IRC;
-  if (!strncmp(nick->raw, "ORENetwork", 10))
+  if (!strncmp(nick->data, "ORENetwork", 10))
     sv = SV_NETWORK;
-  else if (!strncmp(nick->raw, "OREDiscord", 10))
+  else if (!strncmp(nick->data, "OREDiscord", 10))
     sv = SV_DISCORD;
 
   if (sv != SV_IRC) {
     uint16_t i, j, k;
-    for (i = 0; (i < msg->len) && (msg->raw[i] != ':'); i++);
+    for (i = 0; (i < msg->len) && (msg->data[i] != ':'); i++);
     for (j = 0; j < (i - 3); j++)
-      txtbuf_set(nick, j, msg->raw[j + 3]);
+      txtbuf_set(nick, j, msg->data[j + 3]);
     txtbuf_set(nick, j, '\0');
     for (j = i + 2, k = 0; j < msg->len; j++, k++)
-      txtbuf_set(msg, k, msg->raw[j]);
+      txtbuf_set(msg, k, msg->data[j]);
     txtbuf_set(msg, k, '\0');
   }
 
@@ -102,8 +102,9 @@ void shell_esc(TxtBuf *dst, TxtBuf *src) {
   txtbuf_clear(dst);
   txtbuf_push(dst, '\"');
   size_t bses = 0;
-  for (size_t i = 0; i < src->len + 1; i++) {
-    char c = src->raw[i];
+  for (size_t i = 0; i < src->len; i++) {
+    char c = src->data[i];
+    printf("%c", c);
     if (c == '\\') {
       bses++;
     } else {
