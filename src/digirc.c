@@ -27,11 +27,12 @@ void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
   FILE *fp = popen(cmd->raw, "r");
   int i = 0;
   while (fgets(res->raw, 512, fp) != NULL) {
-    if ((i == 0) && res->raw[0] == '<')
-      break;
-    if ((i == 1) && type)
-      break;
-    i++;
+    printf("%s", res->raw);
+    //if ((i == 0) && res->raw[0] == '<')
+    //  break;
+    //if ((i == 1) && type)
+    //  break;
+    //i++;
   }
   res->len = strlen(res->raw);
   pclose(fp);
@@ -73,15 +74,15 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
           shell_esc(&args_esc, &args);
           mueval(&res, false, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.raw, res.raw);
-          if (res.raw[0] != '<')
-            irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
+          //if (res.raw[0] != '<')
+          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
         } else if (!strncmp(msg.raw, "\%type", 5) && msg.len > 6) {
           txtbuf_cpy_cstr(&args, msg.raw + 6);
           shell_esc(&args_esc, &args);
           mueval(&res, true, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.raw, res.raw);
-          if (res.raw[0] != '<')
-            irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
+          //if (res.raw[0] != '<')
+          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.raw);
         } else {
           txtbuf_fmt(&args, "%s | %s: %s", sv_name[sv], nick.raw, msg.raw);
           shell_esc(&args_esc, &args);
