@@ -101,21 +101,21 @@ quote _ = "OK"
 
 help : String -> String
 help "ping" = "Returns 'pong'."
-help "say" = "Says the given args. Example: %say Hello!"
-help "yell" = "Says the given args, but in uppercase. Example: %yell Hello!"
-help "swedish" = "Says the given args, but in swedish. Example: %swedish Hello!"
-help "yellswedish" = "Says the given args, but in uppercase swedish. Example: %yellswedish Hello!"
-help "spanish" = "Says the given args, but in spanish. Example: %spanish Hello!"
-help "yellspanish" = "Says the given args, but in uppercase spanish. Example: %yellspanish Hello!"
-help "aesthetic" = "Says the given args, but in aesthetic. Example: %aesthetic Hello!"
-help "mock" = "Mocks the given args. Example: %mock Hello!"
+help "say" = "Says the given args. Example: .say Hello!"
+help "yell" = "Says the given args, but in uppercase. Example: .yell Hello!"
+help "swedish" = "Says the given args, but in swedish. Example: .swedish Hello!"
+help "yellswedish" = "Says the given args, but in uppercase swedish. Example: .yellswedish Hello!"
+help "spanish" = "Says the given args, but in spanish. Example: .spanish Hello!"
+help "yellspanish" = "Says the given args, but in uppercase spanish. Example: .yellspanish Hello!"
+help "aesthetic" = "Says the given args, but in aesthetic. Example: .aesthetic Hello!"
+help "mock" = "Mocks the given args. Example: .mock Hello!"
 help "whoami" = "Says your username."
-help "rpn" = "An RPN evaluator. Supports: '+', '-', '*', '/', '^', 'dup', 'drop', 'swap', 'over', 'rot', '-rot', 'nip', 'tuck', 'pick', 'clear', 'depth'. Example: %rpn 2 2 +"
-help "quote" = "Say a quote. Example: %quote 46"
-help "rip" = "RIP a user. Example: %rip Digitalis"
-help "eval" = "Evaluate a haskell expression's value. Example: %eval fmap (+ 1) [1, 2, 3]"
-help "type" = "Evaluate a haskell expression's type. Example: %type fmap (+ 1)"
-help "qed" = "Format a mathematical LaTeX-like expression. Example: %qed x \\in \\natural"
+help "rpn" = "An RPN evaluator. Supports: '+', '-', '*', '/', '^', 'dup', 'drop', 'swap', 'over', 'rot', '-rot', 'nip', 'tuck', 'pick', 'clear', 'depth'. Example: .rpn 2 2 +"
+help "quote" = "Say a quote. Example: .quote 46"
+help "rip" = "RIP a user. Example: .rip Digitalis"
+help "eval" = "Evaluate a haskell expression's value. Example: .eval fmap (+ 1) [1, 2, 3]"
+help "type" = "Evaluate a haskell expression's type. Example: .type fmap (+ 1)"
+help "qed" = "Format a mathematical LaTeX-like expression. Example: .qed x \\in \\natural"
 help "go" = "lol no generics"
 help "c" = "Segmentation fault (core dumped)"
 help "elm" = "operators are for adults only sorry"
@@ -226,31 +226,31 @@ qed = pack . qed' [] . unpack . (++ " ")
 
 runCmd : String -> String -> String -> String -> IO String
 runCmd "Debug" _ _ _ = pure "OK"
-runCmd _ _ "%ping" args = pure "pong"
-runCmd _ _ "%time" _ = pure "for you to get a watch"
-runCmd _ _ "%hello" _ = pure "Hello allo"
-runCmd _ _ "%say" args = pure args
-runCmd _ _ "%yell" args = pure $ toUpper args
-runCmd _ _ "%swedish" args = pure $ unwords . map (pack . intersperse 'f' . unpack) . words $ args
-runCmd _ _ "%yellswedish" args = pure $ unwords . map (pack . intersperse 'F' . unpack) . words $ toUpper args
-runCmd _ _ "%spanish" args = pure $ unwords . map (++ "o") . words $ args
-runCmd _ _ "%yellspanish" args = pure $ unwords . map (++ "O") . words $ toUpper args
-runCmd _ _ "%aesthetic" args = pure $ unwords . map singleton $ unpack args
-runCmd _ _ "%mock" args = pure . pack . mock $ unpack args
-runCmd _ _ "%spongebob" args = pure . pack . mock $ unpack args
-runCmd _ _ "%thank" args = pure $ "Thank You " ++ args ++ ", Very Cool!"
-runCmd _ _ "%qed" args = pure . qed $ args
-runCmd _ sender "%whoami" _ = pure sender
-runCmd _ _ "%rpn" args = pure $ rpn (words args) []
-runCmd _ _ "%quote" args with (parsePositive {a = Int} args)
+runCmd _ _ ".ping" args = pure "pong"
+runCmd _ _ ".time" _ = pure "for you to get a watch"
+runCmd _ _ ".hello" _ = pure "Hello allo"
+runCmd _ _ ".say" args = pure args
+runCmd _ _ ".yell" args = pure $ toUpper args
+runCmd _ _ ".swedish" args = pure $ unwords . map (pack . intersperse 'f' . unpack) . words $ args
+runCmd _ _ ".yellswedish" args = pure $ unwords . map (pack . intersperse 'F' . unpack) . words $ toUpper args
+runCmd _ _ ".spanish" args = pure $ unwords . map (++ "o") . words $ args
+runCmd _ _ ".yellspanish" args = pure $ unwords . map (++ "O") . words $ toUpper args
+runCmd _ _ ".aesthetic" args = pure $ unwords . map singleton $ unpack args
+runCmd _ _ ".mock" args = pure . pack . mock $ unpack args
+runCmd _ _ ".spongebob" args = pure . pack . mock $ unpack args
+runCmd _ _ ".thank" args = pure $ "Thank You " ++ args ++ ", Very Cool!"
+runCmd _ _ ".qed" args = pure . qed $ args
+runCmd _ sender ".whoami" _ = pure sender
+runCmd _ _ ".rpn" args = pure $ rpn (words args) []
+runCmd _ _ ".quote" args with (parsePositive {a = Int} args)
   | Just x = pure $ quote x
   | Nothing = pure "OK"
-runCmd _ _ "%rip" args =
+runCmd _ _ ".rip" args =
   if (fromNat $ length args) < 3 then
     pure $ substr 0 (length args) "rip"
   else
     pure $ "rip" ++ strDrop 3 args
-runCmd _ _ "%help" args = pure $ help args
+runCmd _ _ ".help" args = pure $ help args
 runCmd _ _ a bs = pure "OK"
 
 issueCmd : String -> IO String

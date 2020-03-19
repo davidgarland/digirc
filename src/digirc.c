@@ -23,16 +23,17 @@ void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
 }
 
 void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
-  txtbuf_fmt(cmd, "stack exec -- mueval -t 10 %s -e %s", type ? "--inferred-type -T" : "", args->data);
+  txtbuf_fmt(cmd, "stack exec -- mueval --module Data.List --module Data.Tree --module Data.Functor --module Control.Monad --module Control.Comonad --module Control.Lens --module Data.Monoid -t 10 %s -e %s", type ? "--inferred-type -T" : "", args->data);
   FILE *fp = popen(cmd->data, "r");
   int i = 0;
   while (fgets(res->data, 512, fp) != NULL) {
-    printf("%s", res->data);
-    //if ((i == 0) && res->data[0] == '<')
-    //  break;
-    //if ((i == 1) && type)
-    //  break;
-    //i++;
+    if ((i == 0) && strstr(res->data, "error")) {
+      txtbuf_cpy_cstr(res, "Error");
+      break;
+    }
+    if ((i == 1) && type)
+      break;
+    i++;
   }
   res->len = strlen(res->data);
   pclose(fp);
@@ -66,23 +67,21 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
     } else if (!first) {
       sv = irc_info(buf, &nick, &msg);
       printf("[RECV] %s | %s: %s\n", sv_name[sv], nick.data, msg.data);
-      if (msg.len && msg.data[0] == '%') {
-        if (!strncmp(msg.data, "\%reload", 7) && !strncmp(nick.data, "Digi", 4)) {
+      if (msg.len && msg.data[0] == '.') {
+        if (!strncmp(msg.data, ".reload", 7) && !strncmp(nick.data, "Digi", 4)) {
           system("idris --O2 src/backend.idr -o backend");
-        } else if (!strncmp(msg.data, "\%eval", 5) && msg.len > 6) {
+        } else if (!strncmp(msg.data, ".eval", 5) && msg.len > 6) {
           txtbuf_cpy_cstr(&args, msg.data + 6);
           shell_esc(&args_esc, &args);
           mueval(&res, false, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
-          //if (res.data[0] != '<')
-          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
-        } else if (!strncmp(msg.data, "\%type", 5) && msg.len > 6) {
+          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
+        } else if (!strncmp(msg.data, ".type", 5) && msg.len > 6) {
           txtbuf_cpy_cstr(&args, msg.data + 6);
           shell_esc(&args_esc, &args);
           mueval(&res, true, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
-          //if (res.data[0] != '<')
-          //  irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
         } else {
           txtbuf_fmt(&args, "%s | %s: %s", sv_name[sv], nick.data, msg.data);
           printf("args: %s\n", args.data);
@@ -92,7 +91,7 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
           if (!strncmp(res.data, "OK", 2))
             continue;
           txtbuf_fmt(&out, "%s %s", nick.data, res.data);
-          irc_send(conn, "PRIVMSG #orebotspam :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
         }
       }
     } else {
@@ -126,7 +125,7 @@ int main() {
     irc_line(conn, &buf);
     printf("[JOIN] %s", buf.data);
     if (!strncmp(buf.data, ":digirc", 7)) {
-      irc_send(conn, "JOIN #orebotspam\r\n");
+      irc_send(conn, "JOIN #openredstone\r\n");
       break;
     }
   }

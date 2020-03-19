@@ -25,6 +25,11 @@ void irc_send(int conn, const char *const fmt, ...) {
 }
 
 char irc_char(int conn) {
+  char c;
+  uint16_t bytes = read(conn, &c, 1);
+  return c;
+
+  /*
   static char buf[512] = {0};
   static uint16_t bytes = 0;
   static uint16_t bytes_left = 0;
@@ -37,6 +42,7 @@ char irc_char(int conn) {
   }
 
   return buf[bytes - bytes_left--];
+  */
 }
 
 void irc_line(int conn, TxtBuf *buf) {
@@ -87,7 +93,7 @@ enum server irc_info(TxtBuf *buf, TxtBuf *nick, TxtBuf *msg) {
   if (sv != SV_IRC) {
     uint16_t i, j, k;
     for (i = 0; (i < msg->len) && (msg->data[i] != ':'); i++);
-    for (j = 0; j < (i - 3); j++)
+    for (j = 0; j < (i - 4); j++)
       txtbuf_set(nick, j, msg->data[j + 3]);
     txtbuf_set(nick, j, '\0');
     for (j = i + 2, k = 0; j < msg->len; j++, k++)

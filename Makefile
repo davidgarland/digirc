@@ -1,5 +1,5 @@
 CC=cc
-CFLAGS=
+CFLAGS=-Og -fno-omit-frame-pointer -fsanitize=undefined
 LDFLAGS=-Ilib/circa_core -Ilib/circa_txtbuf
 
 default: build

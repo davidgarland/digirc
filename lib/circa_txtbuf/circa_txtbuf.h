@@ -241,7 +241,7 @@ CE txtbuf_cpy_cstr(TxtBuf *dst, char *src) {
   CE req_fail = txtbuf_require(dst, len + 1);
   if (req_fail)
     return req_fail;
-  memcpy(dst->data, src, len);
+  memcpy(dst->data, src, len + 1);
   dst->len = len;
   return CE_OK;
 }
