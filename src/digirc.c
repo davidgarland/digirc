@@ -16,8 +16,9 @@
 void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
   FILE *fp = popen(cmd->data, "r");
   printf("[CMDS]: %s\n", cmd->data);
-  while (fgets(res->data, 512, fp) != NULL);
-  res->len = strlen(res->data);
+  txtbuf_read(res, fp);
+  //while (fgets(res->data, 512, fp) != NULL);
+  //res->len = strlen(res->data);
   printf("[RSLT]: %s", res->data);
   pclose(fp);
 }
@@ -26,7 +27,7 @@ void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
   txtbuf_fmt(cmd, "stack exec -- mueval --module Data.Void --module Data.List --module Data.Tree --module Data.Functor --module Control.Monad --module Control.Comonad --module Control.Lens --module Data.Monoid -t 20 %s -e %s +RTS -N2 -RTS", type ? "--inferred-type -T" : "", args->data);
   FILE *fp = popen(cmd->data, "r");
   int i = 0;
-  while (fgets(res->data, 2048, fp) != NULL) { // TODO 512
+  while (txtbuf_readline(res, fp) != CE_EOF) {
     printf("%s\n", res->data);
     if ((i == 0) && strstr(res->data, "error")) {
       txtbuf_cpy_cstr(res, "Error");
@@ -36,7 +37,6 @@ void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
       break;
     i++;
   }
-  res->len = strlen(res->data);
   pclose(fp);
 }
 
