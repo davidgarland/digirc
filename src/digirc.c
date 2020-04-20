@@ -17,8 +17,6 @@ void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
   FILE *fp = popen(cmd->data, "r");
   printf("[CMDS]: %s\n", cmd->data);
   txtbuf_read(res, fp);
-  //while (fgets(res->data, 512, fp) != NULL);
-  //res->len = strlen(res->data);
   printf("[RSLT]: %s", res->data);
   pclose(fp);
 }
@@ -76,13 +74,13 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
           shell_esc(&args_esc, &args);
           mueval(&res, false, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
-          irc_send(conn, "PRIVMSG #orebotspam :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
         } else if (!strncmp(msg.data, ".type", 5) && msg.len > 6) {
           txtbuf_cpy_cstr(&args, msg.data + 6);
           shell_esc(&args_esc, &args);
           mueval(&res, true, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
-          irc_send(conn, "PRIVMSG #orebotspam :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
         } else {
           txtbuf_fmt(&args, "%s | %s: %s", sv_name[sv], nick.data, msg.data);
           printf("args: %s\n", args.data);
@@ -92,7 +90,7 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
           if (!strncmp(res.data, "OK", 2))
             continue;
           txtbuf_fmt(&out, "%s %s", nick.data, res.data);
-          irc_send(conn, "PRIVMSG #orebotspam :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
         }
       }
     } else {
@@ -127,7 +125,7 @@ int main() {
     irc_line(conn, &buf);
     printf("[JOIN] %s", buf.data);
     if (!strncmp(buf.data, ":digirc", 7)) {
-      irc_send(conn, "JOIN #orebotspam\r\n");
+      irc_send(conn, "JOIN #openredstone\r\n");
       break;
     }
   }
