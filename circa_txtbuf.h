@@ -38,20 +38,20 @@ for (char X; (txtbuf_get(XS, I, &X), J != 1); J = 1)
 ** Forward Declarations
 */
 
+/* Allocators */
+
+CIRCA TxtBuf txtbuf_init(void);
+CIRCA CE txtbuf_alloc(TxtBuf *tb, size_t cap);
+CIRCA CE txtbuf_realloc(TxtBuf *tb, size_t cap);
+CIRCA CE txtbuf_prealloc(TxtBuf *tb, size_t cap);
+CIRCA CE txtbuf_free(TxtBuf *tb);
+
 /* Accessors */
 
 CIRCA CE txtbuf_set(TxtBuf *tb, size_t a, char v);
 CIRCA CE txtbuf_get(TxtBuf *tb, size_t a, char *r);
 CIRCA CE txtbuf_push(TxtBuf *tb, char c);
 CIRCA CE txtbuf_pop(TxtBuf *tb, char *r);
-
-/* Allocators */
-
-CIRCA TxtBuf txtbuf_init(void);
-CIRCA CE txtbuf_alloc(TxtBuf *tb, size_t cap);
-CIRCA CE txtbuf_realloc(TxtBuf *tb, size_t cap);
-CIRCA CE txtbuf_require(TxtBuf *tb, size_t cap);
-CIRCA CE txtbuf_free(TxtBuf *tb);
 
 /* Copy Operations */
 
@@ -64,7 +64,7 @@ CIRCA CIRCA_VPRINTF(2) CE txtbuf_fmt_va(TxtBuf *tb, const char *fmt, va_list ap)
 CIRCA CIRCA_VPRINTF(2) CE txtbuf_fmt(TxtBuf *tb, const char *fmt, ...);
 
 /*
-** Accessors
+** Allocators
 */
 
 CIRCA
@@ -73,24 +73,77 @@ TxtBuf txtbuf_init(void) {
 }
 
 CIRCA
-CE txtbuf_set(TxtBuf *tb, size_t a, char v) {
+CE txtbuf_alloc(TxtBuf *tb, size_t cap) {
+  CE_CHECK(!tb, CE_NULL_ARG);
+  CE_CHECK(!cap, CE_ZERO_ARG);
+  tb->data = malloc(cap);
+  CE_CRITICAL(!tb->data, CE_MALLOC);
+  tb->data[0] = '\0';
+  tb->cap = cap;
+  return CE_OK;
+}
+
+CIRCA
+CE txtbuf_realloc(TxtBuf *tb, size_t cap) {
+  CE_CHECK(!tb, CE_NULL_ARG);
+  CE_CHECK(!tb->data, CE_NULL_ARG);
+  CE_CHECK(!cap, CE_ZERO_ARG);
+  tb->data = realloc(tb->data, cap);
+  CE_CRITICAL(!tb->data, CE_REALLOC);
+  tb->cap = cap;
+  if (cap <= tb->len) {
+    tb->len = cap - 1;
+    tb->data[tb->len] = '\0';
+  }
+  return CE_OK;
+}
+
+CIRCA
+CE txtbuf_prealloc(TxtBuf *tb, size_t cap) {
+  CE_CHECK(!tb, CE_NULL_ARG);
+  CE_CHECK(!tb->data, CE_NULL_ARG);
+  if (cap <= tb->cap)
+    return CE_OK;
+  return txtbuf_realloc(tb, cap);
+}
+
+CIRCA
+CE txtbuf_shrink(TxtBuf *tb) {
+  txtbuf_realloc(tb, tb->len + 1);
+}
+
+CIRCA
+CE txtbuf_free(TxtBuf *tb) {
+  CE_CHECK(!tb, CE_NULL_ARG);
+  tb->cap = 0;
+  tb->len = 0;
+  free(tb->data);
+  tb->data = NULL;
+}
+
+/*
+** Accessors
+*/
+
+CIRCA
+CE txtbuf_set(TxtBuf *tb, size_t a, char c) {
   CE_CHECK(!tb, CE_NULL_ARG);
   CE_CHECK(!tb->data, CE_NULL_ARG);
   CE_CHECK(a > tb->len, CE_OOB);
 
   if (a == tb->len) {
-    if (v == '\0')
+    if (c == '\0')
       return CE_OK;
-    CE req_fail = txtbuf_require(tb, a + 2);
+    CE req_fail = txtbuf_prealloc(tb, a + 2);
     if (req_fail)
       return req_fail;
     tb->data[a + 1] = '\0';
     tb->len = a + 1;
-  } else if (v == '\0') {
+  } else if (c == '\0') {
     tb->len = a;
   }
   
-  tb->data[a] = v;
+  tb->data[a] = c;
  
   return CE_OK;
 }
@@ -99,7 +152,7 @@ CIRCA
 CE txtbuf_get(TxtBuf *tb, size_t a, char *r) {
   CE_CHECK(!tb, CE_NULL_ARG);
   CE_CHECK(!tb->data, CE_NULL_ARG);
-  CE_CHECK(a >= tb->len, CE_OOB);
+  CE_CHECK(a > tb->len, CE_OOB);
   *r = tb->data[a];
   return CE_OK;
 }
@@ -125,61 +178,6 @@ CE txtbuf_pop(TxtBuf *tb, char *r) {
   return CE_OK;
 }
 
-/*
-** Allocators
-*/
-
-CIRCA
-CE txtbuf_alloc(TxtBuf *tb, size_t cap) {
-  CE_CHECK(!tb, CE_NULL_ARG);
-  CE_CHECK(!cap, CE_ZERO_ARG);
-  if (tb->data) {
-    tb->data = realloc(tb->data, cap);
-    CE_CRITICAL(!tb->data, CE_REALLOC);
-    memset(tb->data, 0, cap);
-  } else {
-    tb->data = calloc(cap, 1);
-    CE_CRITICAL(!tb->data, CE_MALLOC);
-  }
-  tb->cap = cap;
-  tb->len = 0;
-  return CE_OK;
-}
-
-CIRCA
-CE txtbuf_realloc(TxtBuf *tb, size_t cap) {
-  CE_CHECK(!tb, CE_NULL_ARG);
-  CE_CHECK(!tb->data, CE_NULL_ARG);
-  CE_CHECK(!cap, CE_ZERO_ARG);
-  tb->data = realloc(tb->data, cap);
-  CE_CRITICAL(!tb->data, CE_REALLOC);
-  if (cap > tb->cap)
-    memset(tb->data + tb->cap, 0, cap - tb->cap);
-  tb->cap = cap;
-  if (cap < tb->len)
-    tb->len = cap - 1;
-  return CE_OK;
-}
-
-CIRCA
-CE txtbuf_require(TxtBuf *tb, size_t cap) {
-  CE_CHECK(!tb, CE_NULL_ARG);
-  CE_CHECK(!tb->data, CE_NULL_ARG);
-  if (cap <= tb->cap)
-    return CE_OK;
-  return txtbuf_realloc(tb, cap);
-}
-
-CIRCA
-CE txtbuf_free(TxtBuf *tb) {
-  CE_CHECK(!tb, CE_NULL_ARG);
-  if (tb->data) {
-    tb->cap = 0;
-    tb->len = 0;
-    free(tb->data);
-    tb->data = NULL;
-  }
-}
 
 /*
 ** Copy Operations
@@ -201,10 +199,10 @@ CE txtbuf_cpy(TxtBuf *dst, TxtBuf *src) {
   CE_CHECK(!src, CE_NULL_ARG);
   CE_CHECK(!src->data, CE_NULL_ARG);
   size_t len = src->len;
-  CE req_fail = txtbuf_require(dst, len);
+  CE req_fail = txtbuf_prealloc(dst, len + 1);
   if (req_fail)
     return req_fail;
-  memcpy(dst->data, src, len);
+  memcpy(dst->data, src, len + 1);
   dst->len = len;
   return CE_OK;
 }
@@ -221,7 +219,7 @@ CE txtbuf_cpy_slice(TxtBuf *dst, TxtBuf *src, Slice s) {
 
   size_t s_len = slice_len(s);
 
-  CE req_fail = txtbuf_require(dst, s_len + 1);
+  CE req_fail = txtbuf_prealloc(dst, s_len + 1);
   if (req_fail)
     return req_fail;
 
@@ -238,10 +236,10 @@ CE txtbuf_cpy_cstr(TxtBuf *dst, char *src) {
   CE_CHECK(!dst->data, CE_NULL_ARG);
   CE_CHECK(!src, CE_NULL_ARG);
   size_t len = strlen(src);
-  CE req_fail = txtbuf_require(dst, len + 1);
+  CE req_fail = txtbuf_prealloc(dst, len + 1);
   if (req_fail)
     return req_fail;
-  memcpy(dst->data, src, len);
+  memcpy(dst->data, src, len + 1);
   dst->len = len;
   return CE_OK;
 }
@@ -257,7 +255,7 @@ CE txtbuf_cpy_cstr_slice(TxtBuf *dst, char *src, Slice s) {
 
   size_t s_len = slice_len(s);
 
-  CE req_fail = txtbuf_require(dst, s_len + 1);
+  CE req_fail = txtbuf_prealloc(dst, s_len + 1);
   if (req_fail)
     return req_fail;
 
@@ -277,12 +275,10 @@ CE txtbuf_fmt_va(TxtBuf *tb, const char *fmt, va_list ap) {
   va_copy(ap2, ap);
   size_t len = vsnprintf(NULL, 0, fmt, ap2);
   va_end(ap2);
-  CE req_fail = txtbuf_require(tb, len + 1);
+  CE req_fail = txtbuf_prealloc(tb, len + 1);
   if (req_fail)
     return req_fail;
-  size_t written = vsnprintf(tb->data, len, fmt, ap);
-  if (written != len)
-    return CE_FMT;
+  vsnprintf(tb->data, len, fmt, ap);
   tb->data[len] = '\0';
   tb->len = len;
   return CE_OK;
