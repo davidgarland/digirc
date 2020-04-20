@@ -442,8 +442,11 @@ CE txtbuf_readline(TxtBuf *tb, FILE *fp) {
   CE_GUARD(!fp, CE_NULL_ARG);
   txtbuf_clear(tb);
   int c;
-  while (((c = fgetc(fp)) != EOF) && (c != '\n'))
-    txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
+  while (((c = fgetc(fp)) != EOF))
+    if (c == '\n')
+      return CE_EOF;
+    else
+      txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
   return CE_OK;
 }
 
@@ -454,7 +457,10 @@ CE txtbuf_cat_readline(TxtBuf *tb, FILE *fp) {
   CE_GUARD(!fp, CE_NULL_ARG);
   int c;
   while (((c = fgetc(fp)) != EOF) && (c == '\n'))
-    txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
+    if (c == '\n')
+      return CE_EOF;
+    else
+      txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
   return CE_OK;
 }
 
