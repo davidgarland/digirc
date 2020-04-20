@@ -418,7 +418,7 @@ CE txtbuf_read(TxtBuf *tb, FILE *fp) {
   CE_GUARD(!tb->data, CE_NULL_ARG);
   CE_GUARD(!fp, CE_NULL_ARG);
   txtbuf_clear(tb);
-  char c;
+  int c;
   while ((c = fgetc(fp)) != EOF)
     txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
   return CE_OK;
@@ -429,7 +429,7 @@ CE txtbuf_cat_read(TxtBuf *tb, FILE *fp) {
   CE_GUARD(!tb, CE_NULL_ARG);
   CE_GUARD(!tb->data, CE_NULL_ARG);
   CE_GUARD(!fp, CE_NULL_ARG);
-  char c;
+  int c;
   while ((c = fgetc(fp)) != EOF)
     txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
   return CE_OK;
@@ -441,7 +441,7 @@ CE txtbuf_readline(TxtBuf *tb, FILE *fp) {
   CE_GUARD(!tb->data, CE_NULL_ARG);
   CE_GUARD(!fp, CE_NULL_ARG);
   txtbuf_clear(tb);
-  char c;
+  int c;
   while (((c = fgetc(fp)) != EOF) && (c != '\n'))
     txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
   return CE_OK;
@@ -452,7 +452,7 @@ CE txtbuf_cat_readline(TxtBuf *tb, FILE *fp) {
   CE_GUARD(!tb, CE_NULL_ARG);
   CE_GUARD(!tb->data, CE_NULL_ARG);
   CE_GUARD(!fp, CE_NULL_ARG);
-  char c;
+  int c;
   while (((c = fgetc(fp)) != EOF) && (c == '\n'))
     txtbuf_push(tb, c); // TODO: this works but is lazy; make it faster
   return CE_OK;
