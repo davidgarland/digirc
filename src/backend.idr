@@ -109,6 +109,8 @@ help "spanish" = "Says the given args, but in spanish. Example: .spanish Hello!"
 help "yellspanish" = "Says the given args, but in uppercase spanish. Example: .yellspanish Hello!"
 help "aesthetic" = "Says the given args, but in aesthetic. Example: .aesthetic Hello!"
 help "mock" = "Mocks the given args. Example: .mock Hello!"
+help "thank" = "Thanks the given args. Example: .thank Jesse"
+help "shrug" = "Shorthand for ¯\\_(ツ)_/¯. Example: .shrug"
 help "whoami" = "Says your username."
 help "rpn" = "An RPN evaluator. Supports: '+', '-', '*', '/', '^', 'dup', 'drop', 'swap', 'over', 'rot', '-rot', 'nip', 'tuck', 'pick', 'clear', 'depth'. Example: .rpn 2 2 +"
 help "quote" = "Say a quote. Example: .quote 46"
@@ -126,7 +128,7 @@ help "haskal" = "lol no jobs"
 help "monad" = "They're just monoids in the category of endofunctors. What's the problem?"
 help "recursion" = "see: recursion"
 help "zygohistomorphic prepromorphisms" = "good luck"
-help x = "Commands: ping, say, yell, swedish, yellswedish, spanish, yellspanish, aesthetic, mock, whoami, rpn, quote, rip, eval, type, qed"
+help x = "Commands: ping, say, yell, swedish, yellswedish, spanish, yellspanish, aesthetic, mock, thank, shrug, whoami, rpn, quote, rip, eval, type, qed"
 
 mock : List Char -> List Char
 mock = mock' False
@@ -239,6 +241,7 @@ runCmd _ _ ".aesthetic" args = pure $ unwords . map singleton $ unpack args
 runCmd _ _ ".mock" args = pure . pack . mock $ unpack args
 runCmd _ _ ".spongebob" args = pure . pack . mock $ unpack args
 runCmd _ _ ".thank" args = pure $ "Thank You " ++ args ++ ", Very Cool!"
+runCmd _ _ ".shrug" args = pure $ args ++ " ¯\\_(ツ)_/¯"
 runCmd _ _ ".qed" args = pure . qed $ args
 runCmd _ sender ".whoami" _ = pure sender
 runCmd _ _ ".rpn" args = pure $ rpn (words args) []
