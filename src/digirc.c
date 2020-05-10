@@ -22,20 +22,29 @@ void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
 }
 
 void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
-  txtbuf_fmt(cmd, "stack exec -- mueval --module Data.Void --module Data.List --module Data.Tree --module Data.Functor --module Control.Monad --module Control.Comonad --module Control.Lens --module Data.Monoid -t 20 %s -e %s +RTS -N2 -RTS", type ? "--inferred-type -T" : "", args->data);
+  txtbuf_fmt(cmd, "stack exec -- mueval --module Data.Complex --module Data.Void --module Data.List --module Data.Tree --module Data.Functor --module Control.Monad --module Control.Comonad --module Control.Lens --module Data.Monoid -t 20 %s -e %s +RTS -N2 -RTS", type ? "--inferred-type -T" : "", args->data);
   FILE *fp = popen(cmd->data, "r");
+  if (!fp) {
+    txtbuf_cpy_cstr(res, "Error");
+    return;
+  }
   int i = 0;
   while (txtbuf_readline(res, fp) != CE_EOF) {
-    printf("%s\n", res->data);
+    printf("%i: %s\n", i, res->data);
     if ((i == 0) && strstr(res->data, "error")) {
       txtbuf_cpy_cstr(res, "Error");
       break;
     }
+    if ((i == 0) && !type)
+      break;
     if ((i == 1) && type)
       break;
     i++;
   }
-  pclose(fp);
+  if (pclose(fp)) {
+    txtbuf_cpy_cstr(res, "Error");
+    return;
+  }
 }
 
 void irc_loop(int conn, bool first, TxtBuf *buf) {

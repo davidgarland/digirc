@@ -118,6 +118,8 @@ help "rip" = "RIP a user. Example: .rip Digitalis"
 help "eval" = "Evaluate a haskell expression's value. Example: .eval fmap (+ 1) [1, 2, 3]"
 help "type" = "Evaluate a haskell expression's type. Example: .type fmap (+ 1)"
 help "qed" = "Format a mathematical LaTeX-like expression. Example: .qed x \\in \\natural"
+help "vowels" = "Show only the vowels of a word. Example: .vowels vowels"
+help "consonants" = "Show only the consonants of a word. Example: .consontants consonants"
 help "go" = "lol no generics"
 help "c" = "Segmentation fault (core dumped)"
 help "elm" = "operators are for adults only sorry"
@@ -128,7 +130,7 @@ help "haskal" = "lol no jobs"
 help "monad" = "They're just monoids in the category of endofunctors. What's the problem?"
 help "recursion" = "see: recursion"
 help "zygohistomorphic prepromorphisms" = "good luck"
-help x = "Commands: ping, say, yell, swedish, yellswedish, spanish, yellspanish, aesthetic, mock, thank, shrug, whoami, rpn, quote, rip, eval, type, qed"
+help x = "Commands: ping, say, yell, swedish, yellswedish, spanish, yellspanish, aesthetic, mock, thank, shrug, whoami, rpn, quote, rip, eval, type, qed, vowels, consonants"
 
 mock : List Char -> List Char
 mock = mock' False
@@ -226,6 +228,19 @@ qed = pack . qed' [] . unpack . (++ " ")
 	    (unpack (trim . composeN qedReps $ pack w)) ++ [c] ++ qed' [] cs
         qed' _ _ = []
 
+isVowel : Char -> Bool
+isVowel 'A' = True
+isVowel 'E' = True
+isVowel 'I' = True
+isVowel 'O' = True
+isVowel 'U' = True
+isVowel 'a' = True
+isVowel 'e' = True
+isVowel 'i' = True
+isVowel 'o' = True
+isVowel 'u' = True
+isVowel _ = False
+
 runCmd : String -> String -> String -> String -> IO String
 runCmd "Debug" _ _ _ = pure "OK"
 runCmd _ _ ".ping" args = pure "pong"
@@ -253,6 +268,8 @@ runCmd _ _ ".rip" args =
     pure $ substr 0 (length args) "rip"
   else
     pure $ "rip" ++ strDrop 3 args
+runCmd _ _ ".vowels" args = pure . unwords . map (pack . map (\c => if isVowel c then c else '_') . unpack) . words $ args
+runCmd _ _ ".consonants" args = pure . unwords . map (pack . map (\c => if isVowel c then '_' else c) . unpack) . words $ args
 runCmd _ _ ".help" args = pure $ help args
 runCmd _ _ a bs = pure "OK"
 
