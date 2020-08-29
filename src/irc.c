@@ -106,23 +106,16 @@ enum server irc_info(TxtBuf *buf, TxtBuf *nick, TxtBuf *msg) {
 
 void shell_esc(TxtBuf *dst, TxtBuf *src) {
   txtbuf_clear(dst);
-  txtbuf_push(dst, '\"');
-  size_t bses = 0;
+  txtbuf_push(dst, '\'');
   for (size_t i = 0; i < src->len; i++) {
     char c = src->data[i];
     printf("%c", c);
-    if (c == '\\') {
-      bses++;
+    if (c == '\'') {
+      txtbuf_cat_cstr(dst, "\'\"\'\"\'");
     } else {
-      if (bses & 1)
-        txtbuf_push(dst, '\\');
-      bses = 0;
+      txtbuf_push(dst, c);
     }
-    if (c == '"') {
-      txtbuf_push(dst, '\\');
-    }
-    txtbuf_push(dst, c);
   }
-  txtbuf_push(dst, '\"');
+  txtbuf_push(dst, '\'');
 }
 

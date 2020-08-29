@@ -13,6 +13,12 @@
 
 #include "digirc.h"
 
+#define CHANNEL "#openredstone"
+
+TxtBuf nick;
+TxtBuf msg;
+enum server sv;
+
 void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
   FILE *fp = popen(cmd->data, "r");
   printf("[CMDS]: %s\n", cmd->data);
@@ -22,7 +28,7 @@ void irc_cmd(TxtBuf *res, TxtBuf *cmd) {
 }
 
 void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
-  txtbuf_fmt(cmd, "stack exec -- mueval --module Data.Complex --module Data.Void --module Data.List --module Data.Tree --module Data.Functor --module Control.Monad --module Control.Comonad --module Control.Lens --module Data.Monoid -t 20 %s -e %s +RTS -N2 -RTS", type ? "--inferred-type -T" : "", args->data);
+  txtbuf_fmt(cmd, "stack exec -- mueval --module Data.Complex --module Data.Void --module Data.List --module Data.Tree --module Data.Functor --module Control.Monad --module Control.Comonad --module Control.Lens --module Data.Monoid --module Data.Semigroup -t 20 %s -e %s +RTS -N2 -RTS", type ? "--inferred-type -T" : "", args->data);
   FILE *fp = popen(cmd->data, "r");
   if (!fp) {
     txtbuf_cpy_cstr(res, "Error");
@@ -48,17 +54,12 @@ void mueval(TxtBuf *res, bool type, TxtBuf *cmd, TxtBuf *args) {
 }
 
 void irc_loop(int conn, bool first, TxtBuf *buf) {
-  TxtBuf nick = txtbuf_init();
-  TxtBuf msg = txtbuf_init();
   TxtBuf args = txtbuf_init();
   TxtBuf args_esc = txtbuf_init();
   TxtBuf cmd = txtbuf_init();
   TxtBuf res = txtbuf_init();
   TxtBuf out = txtbuf_init();
-  enum server sv;
 
-  txtbuf_alloc(&nick, 1);
-  txtbuf_alloc(&msg, 1);
   txtbuf_alloc(&args, 1);
   txtbuf_alloc(&args_esc, 1);
   txtbuf_alloc(&cmd, 1);
@@ -83,13 +84,13 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
           shell_esc(&args_esc, &args);
           mueval(&res, false, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
-          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG " CHANNEL " :%s\r\n", out.data);
         } else if (!strncmp(msg.data, ".type", 5) && msg.len > 6) {
           txtbuf_cpy_cstr(&args, msg.data + 6);
           shell_esc(&args_esc, &args);
           mueval(&res, true, &cmd, &args_esc);
           txtbuf_fmt(&out, "%s => %s", nick.data, res.data);
-          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG " CHANNEL " :%s\r\n", out.data);
         } else {
           txtbuf_fmt(&args, "%s | %s: %s", sv_name[sv], nick.data, msg.data);
           printf("args: %s\n", args.data);
@@ -99,7 +100,7 @@ void irc_loop(int conn, bool first, TxtBuf *buf) {
           if (!strncmp(res.data, "OK", 2))
             continue;
           txtbuf_fmt(&out, "%s %s", nick.data, res.data);
-          irc_send(conn, "PRIVMSG #openredstone :%s\r\n", out.data);
+          irc_send(conn, "PRIVMSG " CHANNEL " :%s\r\n", out.data);
         }
       }
     } else {
@@ -112,6 +113,9 @@ int main() {
   TxtBuf buf = {0};
   txtbuf_alloc(&buf, 513);
   buf.data[512] = '\0';
+
+  txtbuf_alloc(&nick, 1);
+  txtbuf_alloc(&msg, 1); 
 
   // Connect to the IRC server.
   struct addrinfo hints = {
@@ -129,15 +133,23 @@ int main() {
   // Respond to the initial ping.
   irc_loop(conn, true, &buf);
 
-  // Join the room.
-  while (true) {
+  // Wait for confirmation we've joined.
+  while (strncmp(buf.data, ":digirc", 7)) {
     irc_line(conn, &buf);
-    printf("[JOIN] %s", buf.data);
-    if (!strncmp(buf.data, ":digirc", 7)) {
-      irc_send(conn, "JOIN #openredstone\r\n");
-      break;
-    }
+    sv = irc_info(&buf, &nick, &msg);
+    printf("[JOIN] %s | %s: %s\n", sv_name[sv], nick.data, msg.data);
   }
+
+  // Send the IDENTIFY message, wait for a response.
+  irc_send(conn, "PRIVMSG NickServ :IDENTIFY digirc password\r\n");
+  while (strncmp(msg.data, "You are now identified", 22)) {
+    irc_line(conn, &buf);
+    sv = irc_info(&buf, &nick, &msg);
+    printf("[IDTY] %s | %s: %s\n", sv_name[sv], nick.data, msg.data);
+  }
+
+  // Send the JOIN message.
+  irc_send(conn, "JOIN " CHANNEL "\r\n");
 
   // Run the rest of the main loop.
   irc_loop(conn, false, &buf);
